@@ -1,0 +1,174 @@
+#include <stdlib.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <netinet/in.h>
+#include <stdint.h>
+#include <errno.h>
+#include <string.h>
+#include <signal.h>
+#include <arpa/inet.h>
+
+#define _DEF_MAX_BACKLOG 	20
+#define _DEF_PORT 		23
+#define _DEF_IP			0
+#define _DEF_CONFIG_FILE	"/etc/bbs.conf"
+
+#ifdef _DEBUG
+//DEBUG Macros
+#warning "Compiling in DEBUG mode"
+#define DEBUG_PRINTF( ... ) { \
+	printf("%s:%d: ", __FILE__, __LINE__); \ 
+	printf(__VA_ARGS__ ); }
+#define PRINT_ERROR( str )  { \
+	printf("%s:%d: %s: %s\n", __FILE__, __LINE__, str, strerror(errno)); }
+#else
+//Release Macros
+#define DEBUG_PRINTF( ... ) { }
+#define PRINT_ERROR( str ) { printf("%s: %s\n", str, strerror(errno)); }
+#endif
+
+struct prog_params
+{
+	uint8_t 	telnet;
+	uint16_t 	port;
+	uint16_t 	backlog;
+	char*		ip;
+	char** 		run_argv;
+	int 		run_argc;
+
+	uint8_t		serial;
+	char*		serial_port;
+};
+
+struct prog_params parse_args(int argc, char* argv[])
+{
+	struct prog_params ret;
+	memset(&ret, 0, sizeof(ret));
+
+	for (int i = 1; i < argc; i++)
+	{
+		int i_cpy = i; //i might be changed in loop
+
+		if(argv[i_cpy][0] == '-')
+		{
+			for (int o = 1; o < strlen(argv[i_cpy]); o++)
+			{
+				switch (argv[i_cpy][o])
+				{
+					case 'h':
+						printf("Help goes here\n");
+						break;
+					case 'p':
+						ret.telnet = 1;
+						ret.port = atoi(argv[i_cpy + 1]);
+						i++;
+						break;
+					case 'i':
+						ret.telnet = 1;
+						ret.ip = argv[i_cpy + 1];
+						i++;
+						break;
+					case 's'://Serial modem
+						ret.serial = 1;
+						ret.serial_port = argv[i_cpy + 1];
+						i++;
+						break;
+					default:
+						printf("Unrecognized Option: '%c'\n", argv[i_cpy][o]);
+						break;
+				};//switch
+			}//for
+		}//if
+		else
+		{
+			//Copy the rest as arguments for prog to exec
+			ret.run_argc = argc - i_cpy;
+			ret.run_argv = &(argv[i_cpy]);
+		}//else	
+	}//for
+
+	return ret;
+}
+
+void handle_connection(int _socket, struct sockaddr_in _addr)
+{
+	pid_t pid = fork();
+	if( pid > 0 )
+	{
+		close(_socket);
+		return;
+	}
+	else if ( pid < 0 )
+		return;
+
+	//This is here for later
+	//This should handle a premature closed socket from client to not create unused processes
+	pid = fork();
+	if(pid > 0)
+	{
+		close(_socket);
+		//Instead of waiting for pid, check if process is running AND socket is still open
+		wait(0);
+		exit(0);
+	}
+	else if(pid < 0)
+		exit(1);
+	
+	//Redirect STDIO to socket
+	close(STDIN_FILENO);
+	dup(_socket);
+	close(STDOUT_FILENO);
+	dup(_socket);
+
+	//RUUNNNN!
+	execl("/usr/bin/whoami", "/usr/bin/whoami", NULL);
+
+	close(_socket);
+	exit(0);
+}
+
+
+int main(int argc, char* argv[])
+{
+	signal(SIGCHLD,SIG_IGN); //Ignore sigchld
+
+	struct prog_params params = parse_args(argc, argv);
+	int server_socket, client_socket;
+	struct sockaddr_in socket_address, client_address;
+	size_t claddrsize = sizeof(client_address);
+	
+	if ( (server_socket = socket(AF_INET, SOCK_STREAM, 0)) == -1 )
+	{
+		printf("Error creating socket: %i: %s\n", errno, strerror(errno));
+		exit(1);
+	}
+
+	memset (&socket_address, 0, sizeof(socket_address));
+
+	socket_address.sin_family = AF_INET;
+	socket_address.sin_port = htons( 1111 );
+
+	if ( (bind(server_socket, &socket_address, sizeof(socket_address))) == -1 )
+	{
+		printf("Error binding socket: %i: %s\n", errno, strerror(errno));
+		exit(1);
+	}
+
+	if ( (listen(server_socket, 10)) == -1 )
+	{
+		printf("Error listening socket: %i: %s\n", errno, strerror(errno));
+		exit(1);
+	}
+
+	while(1)
+	{
+		client_socket = accept(server_socket, &client_address, &claddrsize);
+		DEBUG_PRINTF("Connection: %s\n", inet_ntoa(client_address.sin_addr));
+		handle_connection(client_socket, client_address);
+	}
+
+	return 0;
+}
