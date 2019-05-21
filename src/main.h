@@ -41,6 +41,9 @@ struct prog_params
 
 	uint8_t		serial;
 	char*		serial_port;
+	uint32_t	serial_baudrate;
+
+	char*		pidfile;
 };
 
 struct prog_params parse_args(int argc, char* argv[]);

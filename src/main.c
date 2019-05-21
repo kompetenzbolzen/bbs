@@ -33,6 +33,15 @@ struct prog_params parse_args(int argc, char* argv[])
 						ret.serial_port = argv[i_cpy + 1];
 						i++;
 						break;
+					case 'b':
+						ret.serial = 1;
+						ret.serial_baudrate = atoi(argv[i_cpy + 1]);
+						i++;
+						break;
+					case 'f'://PID file for spawned children
+						ret.pidfile = argv[i_cpy + 1];
+						i++;
+						break;
 					default:
 						printf("Unrecognized Option: '%c'\n", argv[i_cpy][o]);
 						break;
@@ -83,12 +92,27 @@ void handle_connection(int _socket, struct sockaddr_in _addr)
 	//RUUNNNN!
 	execl("/usr/bin/whoami", "/usr/bin/whoami", NULL);
 
+	PRINT_ERROR("EXEC failed");
+
 	close(_socket);
 	exit(0);
 }
 
 
 int main(int argc, char* argv[])
+{
+	signal(SIGCHLD,SIG_IGN); //Ignore sigchld
+	struct prog_params params = parse_args(argc, argv);
+	
+	FILE* pidfile = fopen(prog_params.pidfile == NULL ? "pidfile" : prog_params.pidfile, "w");
+
+	close (pidfile);
+
+	return 0;
+}
+
+
+int main__q(int argc, char* argv[])
 {
 	signal(SIGCHLD,SIG_IGN); //Ignore sigchld
 
