@@ -30,6 +30,11 @@
 #define PRINT_ERROR( str ) { printf("%s: %s\n", str, strerror(errno)); }
 #endif
 
+#define ERROR_HELP( ... ) { \
+	printf(__VA_ARGS__); \
+	printf("Help goes here"); \
+	exit(1); }
+
 struct prog_params
 {
 	uint8_t 	telnet;
@@ -43,6 +48,7 @@ struct prog_params
 	char*		serial_port;
 	uint32_t	serial_baudrate;
 
+	uint8_t		fork;
 	char*		pidfile;
 };
 
@@ -51,3 +57,5 @@ struct prog_params parse_args(int argc, char* argv[]);
 void handle_connection(int _socket, struct sockaddr_in _addr);
 
 int main(int argc, char* argv[]);
+
+void telnet_server(struct prog_params params);

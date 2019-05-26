@@ -16,7 +16,7 @@ struct prog_params parse_args(int argc, char* argv[])
 				switch (argv[i_cpy][o])
 				{
 					case 'h':
-						printf("Help goes here\n");
+						ERROR_HELP("");
 						break;
 					case 'p':
 						ret.telnet = 1;
@@ -39,11 +39,12 @@ struct prog_params parse_args(int argc, char* argv[])
 						i++;
 						break;
 					case 'f'://PID file for spawned children
+						ret.fork = 1;
 						ret.pidfile = argv[i_cpy + 1];
 						i++;
 						break;
 					default:
-						printf("Unrecognized Option: '%c'\n", argv[i_cpy][o]);
+						ERROR_HELP("Unrecognized Option: '%c'\n", argv[i_cpy][o]);
 						break;
 				};//switch
 			}//for
@@ -53,8 +54,11 @@ struct prog_params parse_args(int argc, char* argv[])
 			//Copy the rest as arguments for prog to exec
 			ret.run_argc = argc - i_cpy;
 			ret.run_argv = &(argv[i_cpy]);
-		}//else	
+		}//else
 	}//for
+
+	if(ret.telnet == ret.serial)//run EITHER in telnet OR modem mode
+		ERROR_HELP("Select either modem OR telnet.\n");
 
 	return ret;
 }
@@ -103,20 +107,46 @@ int main(int argc, char* argv[])
 {
 	signal(SIGCHLD,SIG_IGN); //Ignore sigchld
 	struct prog_params params = parse_args(argc, argv);
-	
-	FILE* pidfile = fopen(prog_params.pidfile == NULL ? "pidfile" : prog_params.pidfile, "w");
 
-	close (pidfile);
+	//Fork and write PID to pidfile
+	if(params.fork)
+	{
+		FILE* pidfile = fopen(params.pidfile, "w");
+		if(!pidfile)
+		{
+			PRINT_ERROR("Unable to open pidfile for writing");
+			exit(1);
+		}
+		pid_t pid = fork();
+
+		if(pid < 0)
+		{
+			PRINT_ERROR("fork() failed");
+			exit(1);
+		}
+		else if(pid > 0)
+		{
+			fprintf(pidfile, "%i", pid);
+			printf("Forked with PID %i\n", pid);
+			fclose (pidfile);
+		}
+
+		fclose (pidfile);
+	}//if params.pidfile
+
+	if(params.serial)
+		printf("asdf");
+	else if (params.telnet)
+
 
 	return 0;
 }
 
 
-int main__q(int argc, char* argv[])
+void telnet_server(struct prog_params params)
 {
 	signal(SIGCHLD,SIG_IGN); //Ignore sigchld
 
-	struct prog_params params = parse_args(argc, argv);
 	int server_socket, client_socket;
 	struct sockaddr_in socket_address, client_address;
 	size_t claddrsize = sizeof(client_address);
@@ -130,7 +160,7 @@ int main__q(int argc, char* argv[])
 	memset (&socket_address, 0, sizeof(socket_address));
 
 	socket_address.sin_family = AF_INET;
-	socket_address.sin_port = htons( 1111 );
+	socket_address.sin_port = htons( params.port );
 
 	if ( (bind(server_socket, &socket_address, sizeof(socket_address))) == -1 )
 	{
@@ -150,6 +180,4 @@ int main__q(int argc, char* argv[])
 		DEBUG_PRINTF("Connection: %s\n", inet_ntoa(client_address.sin_addr));
 		handle_connection(client_socket, client_address);
 	}
-
-	return 0;
 }
