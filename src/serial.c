@@ -1,8 +1,4 @@
-#include <errno.h>
-#include <fcntl.h> 
-#include <string.h>
-#include <termios.h>
-#include <unistd.h>
+#include "serial.h"
 
 int
 set_interface_attribs (int fd, int speed, int parity)
@@ -11,7 +7,7 @@ set_interface_attribs (int fd, int speed, int parity)
         memset (&tty, 0, sizeof tty);
         if (tcgetattr (fd, &tty) != 0)
         {
-                error_message ("error %d from tcgetattr", errno);
+                //error_message ("error %d from tcgetattr", errno);
                 return -1;
         }
 
@@ -39,7 +35,7 @@ set_interface_attribs (int fd, int speed, int parity)
 
         if (tcsetattr (fd, TCSANOW, &tty) != 0)
         {
-                error_message ("error %d from tcsetattr", errno);
+                //error_message ("error %d from tcsetattr", errno);
                 return -1;
         }
         return 0;
@@ -52,13 +48,35 @@ set_blocking (int fd, int should_block)
         memset (&tty, 0, sizeof tty);
         if (tcgetattr (fd, &tty) != 0)
         {
-                error_message ("error %d from tggetattr", errno);
+                //error_message ("error %d from tggetattr", errno);
                 return;
         }
 
         tty.c_cc[VMIN]  = should_block ? 1 : 0;
         tty.c_cc[VTIME] = 5;            // 0.5 seconds read timeout
 
-        if (tcsetattr (fd, TCSANOW, &tty) != 0)
-                error_message ("error %d setting term attributes", errno);
+        //if (tcsetattr (fd, TCSANOW, &tty) != 0)
+                //error_message ("error %d setting term attributes", errno);
 }
+
+/*
+...
+char *portname = "/dev/ttyUSB1"
+ ...
+int fd = open (portname, O_RDWR | O_NOCTTY | O_SYNC);
+if (fd < 0)
+{
+        error_message ("error %d opening %s: %s", errno, portname, strerror (errno));
+        return;
+}
+
+set_interface_attribs (fd, B115200, 0);  // set speed to 115,200 bps, 8n1 (no parity)
+set_blocking (fd, 0);                // set no blocking
+
+write (fd, "hello!\n", 7);           // send 7 character greeting
+
+usleep ((7 + 25) * 100);             // sleep enough to transmit the 7 plus
+                                     // receive 25:  approx 100 uS per char transmit
+char buf [100];
+int n = read (fd, buf, sizeof buf);  // read up to 100 characters if ready to read
+*/

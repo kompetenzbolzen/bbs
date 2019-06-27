@@ -32,7 +32,7 @@
 
 #define ERROR_HELP( ... ) { \
 	printf(__VA_ARGS__); \
-	printf("Help goes here"); \
+	printf("bbs\n-p PORT: telnet port\n-i IP: telnet listen ip\n-s DEVIVE: modem serial device\n-b BAUD: serial baudrate\n-f FILE: use pidfile\n"); \
 	exit(1); }
 
 struct prog_params
@@ -59,3 +59,5 @@ void handle_connection(int _socket, struct sockaddr_in _addr);
 int main(int argc, char* argv[]);
 
 void telnet_server(struct prog_params params);
+
+void dialup_server(struct prog_params params);

@@ -1,4 +1,6 @@
 #include "main.h"
+#include "serial.h"
+#include "modem.h"
 
 struct prog_params parse_args(int argc, char* argv[])
 {
@@ -135,7 +137,7 @@ int main(int argc, char* argv[])
 	}//if params.fork
 
 	if ( params.serial )
-		printf("asdf");
+		dialup_server(params);
 	else if (params.telnet)
 		telnet_server(params);
 
@@ -144,6 +146,27 @@ int main(int argc, char* argv[])
 
 void dialup_server(struct prog_params params)
 {
+
+	int fd = open (params.serial_port, O_RDWR | O_NOCTTY | O_SYNC);
+	if (fd < 0)
+	{
+	        printf ("error %d opening %s: %s\n", errno, params.serial_port, strerror (errno));
+	        return;
+	}
+	
+	///TODO Hardcoded Baudrate. change!
+	set_interface_attribs (fd, params.serial_baudrate, 0);  // set speed to 115,200 bps, 8n1 (no parity)
+	set_blocking (fd, 0);                // set no blocking
+
+	int ret = modem_accept_wait(fd);
+	printf("maw(): %i\n", ret);
+
+	if(ret)
+		return;
+
+	printf("Connection!\n");
+
+	modem_run(fd, 0, NULL);
 }
 
 void telnet_server(struct prog_params params)
