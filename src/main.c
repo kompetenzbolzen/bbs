@@ -134,14 +134,17 @@ int main(int argc, char* argv[])
 		fclose (pidfile);
 	}//if params.pidfile
 
-	if(params.serial)
+	if ( params.serial )
 		printf("asdf");
-	else if (params.telnet)
-
+	else if ( params.telnet )
+		telnet_server( params );
 
 	return 0;
 }
 
+void dialup_server(struct prog_params params)
+{
+}
 
 void telnet_server(struct prog_params params)
 {
