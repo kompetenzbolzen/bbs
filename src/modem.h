@@ -15,10 +15,11 @@
 #define _AT_ECHO_OFF "ATE0\r\n"
 #define _AT_ECHO_ON "ATE1\r\n\”"
 #define _AT_HANGUP "ATH\r\n"
-#define _AT_CMD_MODE "+++"
+#define _AT_CMD_MODE "+++\r\n"
+#define _AT_MUTE "ATM0\r\n"
 
 int modem_accept_wait(int fd);
 
-int modem_hang(int fd);
+int modem_command(int fd, char* cmd, int timeout_ms);
 
 int modem_run(int fd, int argc, char* argv[]);

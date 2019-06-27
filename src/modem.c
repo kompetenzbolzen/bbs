@@ -20,7 +20,7 @@ int modem_accept_wait(int fd)
 	fds.fd = fd;
 	fds.events = POLLIN;
 
-	write(fd, _AT_ECHO_OFF, strlen(_AT_ECHO_OFF) );
+	/*write(fd, _AT_ECHO_OFF, strlen(_AT_ECHO_OFF) );
 
 	int ok = 0;
 	while(1) {
@@ -37,9 +37,13 @@ int modem_accept_wait(int fd)
 
 	if(! ok )
 		return 3;
+*/
 
-	printf("Modem OK\n");
+	modem_command(fd, _AT_ECHO_OFF, 1000);
+	modem_command(fd, _AT_MUTE, 1000);
 
+	//printf("Modem OK\n");
+/* //DONT wait for ring
 	while ( 1 ) { //wait for RING
 		ret = poll(&fds, 1, 2000); //poll in 2s interval
 		if(ret) {
@@ -48,24 +52,73 @@ int modem_accept_wait(int fd)
 					break;
 		}
 	}
-
+*/
 	printf("Modem RINGING\n");
-
+	int ok = 5;
+	int timeout = 60000;
 	write (fd, _AT_ANSWER, strlen(_AT_ANSWER)); //Accept incoming call
-	ret = poll(&fds, 1, 30000);
-	if(ret) {
-		cnt = read (fd, buff, 128);
-		if(strstr(buff, "CONNECT"))
-			return 0;
-		else
-			return 4;
+	cnt = 0;
+	while(1)
+	{
+		ret = poll(&fds, 1, 60000); //Connection timeout 1 minute
+		if(!ret)
+			break;
+
+		if(cnt >= 128)
+			break;
+
+		cnt += read (fd, &buff[cnt - 1], 128 - cnt + 1);
+
+		printf("%s\n", buff);
+
+		if(strstr(buff, "CONNECT")){
+			ok = 0;
+			break;
+		}
 	}
 
-	return 5;
+	if(poll(&fds, 1, 1)) //empty the buffer
+			read(fd, &buff, 128);
+
+	return ok;
 }
 
-int modem_hang(int fd)
+int modem_command(int fd, char* cmd, int timeout_ms)
 {
+	char buff[128];
+	int ret;		//for retturn values
+	struct pollfd fds;	//poll struct
+	int cnt = 0;		//read byte counter
+
+	fds.fd = fd;
+	fds.events = POLLIN;
+
+	write(fd, cmd, strlen(cmd) );
+
+	int ok = 1;
+	while(1) {
+		ret = poll(&fds, 1, timeout_ms);
+		if (ret)
+			cnt += read(fd, &buff[cnt - 1], 128 - cnt + 1);
+		else 
+			break;
+
+		if(cnt >= 128)
+			break;
+
+
+		if( strstr(buff, "OK") ) {
+			ok = 0;
+			break;
+		}
+	}
+
+	if(poll(&fds, 1, 1)) //Empty the buffer
+			read(fd, &buff, 128);
+
+	printf("Command %s: %s\n", cmd, ok ? "FAIL" : "OK");
+
+	return ok;
 }
 
 int modem_run(int fd, int argc, char* argv[])
@@ -88,8 +141,7 @@ int modem_run(int fd, int argc, char* argv[])
 
 		dup2 (in[0],  STDIN_FILENO);
 		dup2 (out[1], STDOUT_FILENO);
-		
-		printf("EXEC ERROR\n\n");
+		printf("EXEC ERROR\r\n");
 		exit(0);
 	}
 	else if (pid < 0) {//error
@@ -109,6 +161,8 @@ int modem_run(int fd, int argc, char* argv[])
 		fds[1].fd = fd;
 		fds[1].events = POLLIN;
 
+		printf("Forked with PID %i\n", pid);
+
 		while(1)
 		{
 			int ret = poll (fds, 2, 100);
@@ -116,11 +170,10 @@ int modem_run(int fd, int argc, char* argv[])
 			if ( fds[0].revents & POLLIN ) {
 				int cnt = read (out[0], buff, buffsize);
 				if(cnt) {
-					while(1) { //replace +++ to not trigger modem command mode
-						char *str = strstr(buff, "+++");
-						if(str)
-							str[1] = '*';
-					}
+					//replace +++ to not trigger modem command mode
+					char *str = strstr(buff, "+++");
+					if(str)
+						str[1] = '*';
 
 					write(fd, buff, cnt);
 				}
@@ -128,20 +181,22 @@ int modem_run(int fd, int argc, char* argv[])
 			if ( fds[1].revents & POLLIN ) {
 				int cnt = read (fd, buff, buffsize);
 				if(cnt) {
-					while(1) { //search for modem error message
-						char *str = strstr(buff, "NO CARRIER");
-						if(str) { //Exit if message found
-							return 0;
-						}
-					}
+					//search for modem error message
+					char *str = strstr(buff, "NO CARRIER");
+					if(str) //Exit if message found
+						break;
 
 					write(in[1], buff, cnt);
 				}
 			}
 
 			if(kill(pid,0)) //Check if child is still alive, if not return.
-				return 0;
+				break;
 		}
+
+		printf("Connection closed.\n");
+		close(fd); //Auto closes connection
+		return 0;
 	}
 
 }
