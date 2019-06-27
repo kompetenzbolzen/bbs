@@ -20,29 +20,10 @@ int modem_accept_wait(int fd)
 	fds.fd = fd;
 	fds.events = POLLIN;
 
-	/*write(fd, _AT_ECHO_OFF, strlen(_AT_ECHO_OFF) );
-
-	int ok = 0;
-	while(1) {
-		ret = poll(&fds, 1, 1000);
-		if (ret)
-			cnt = read(fd, buff, 128); //Dummy read from _AT_ECHO_OFF, should say OK
-		else 
-			break;
-
-
-		if( strstr(buff, "OK") )
-			ok = 1;
-	}
-
-	if(! ok )
-		return 3;
-*/
-
 	modem_command(fd, _AT_ECHO_OFF, 1000);
 	modem_command(fd, _AT_MUTE, 1000);
+	modem_command(fd, _AT_RESET_ON_DTR, 1000);
 
-	//printf("Modem OK\n");
 /* //DONT wait for ring
 	while ( 1 ) { //wait for RING
 		ret = poll(&fds, 1, 2000); //poll in 2s interval
@@ -141,7 +122,15 @@ int modem_run(int fd, int argc, char* argv[])
 
 		dup2 (in[0],  STDIN_FILENO);
 		dup2 (out[1], STDOUT_FILENO);
-		printf("EXEC ERROR\r\n");
+
+		char *arv = malloc(sizeof(char) * (argc + 1));
+		memset(arv, 0, sizeof(char) * (argc + 1));
+		memcpy (arv, argv, argc);
+
+		//execv(argv[0], arv);
+		execl("/bin/bash", "/bin/bash", NULL);
+
+		printf("EXEC ERROR %i: %s\r\n", errno, strerror(errno));
 		exit(0);
 	}
 	else if (pid < 0) {//error

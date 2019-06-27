@@ -166,7 +166,7 @@ void dialup_server(struct prog_params params)
 
 	printf("Connection!\n");
 
-	modem_run(fd, 0, NULL);
+	modem_run(fd, params.run_argc, params.run_argv);
 }
 
 void telnet_server(struct prog_params params)
