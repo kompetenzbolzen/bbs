@@ -132,12 +132,12 @@ int main(int argc, char* argv[])
 		}
 
 		fclose (pidfile);
-	}//if params.pidfile
+	}//if params.fork
 
 	if(params.serial)
 		printf("asdf");
 	else if (params.telnet)
-
+		telnet_server(params);
 
 	return 0;
 }
