@@ -21,7 +21,17 @@
 #define _AT_RESET_ON_DTR "AT&D3\r\n"
 
 int modem_accept_wait(int fd);
+/*
+ * Waits for RING, accepts incoming calls. Return is non-zero when cennection fails.
+ * */
 
 int modem_command(int fd, char* cmd, int timeout_ms);
+/*
+ * Execute an AT command. return is non-zero if answer is not OK
+ * */
 
 int modem_run(int fd, int argc, char* argv[]);
+/*
+ * Run a program with modem as STDIO. checks if connection is still alive & process is still active.
+ * will close fd on successful return
+ * */

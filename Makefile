@@ -5,7 +5,7 @@ BUILDDIR        = build
 SOURCEDIR       = src
 OBJECTDIR       = obj
 
-OUTPUT          = program
+OUTPUT          = bbs
 
 SRCS = $(wildcard $(SOURCEDIR)/*.c)
 OBJS = $(SRCS:.c=.o)

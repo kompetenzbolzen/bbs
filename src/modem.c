@@ -122,6 +122,7 @@ int modem_run(int fd, int argc, char* argv[])
 
 		dup2 (in[0],  STDIN_FILENO);
 		dup2 (out[1], STDOUT_FILENO);
+		dup2 (out[1], STDERR_FILENO);
 
 		char *arv = malloc(sizeof(char) * (argc + 1));
 		memset(arv, 0, sizeof(char) * (argc + 1));
@@ -172,9 +173,10 @@ int modem_run(int fd, int argc, char* argv[])
 				if(cnt) {
 					//search for modem error message
 					char *str = strstr(buff, "NO CARRIER");
-					if(str) //Exit if message found
+					if(str){ //Exit if message found
+						kill(pid,SIGTERM);
 						break;
-
+					}
 					write(in[1], buff, cnt);
 				}
 			}

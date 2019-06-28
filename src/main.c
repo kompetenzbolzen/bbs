@@ -90,10 +90,9 @@ void handle_connection(int _socket, struct sockaddr_in _addr)
 		exit(1);
 	
 	//Redirect STDIO to socket
-	close(STDIN_FILENO);
-	dup(_socket);
-	close(STDOUT_FILENO);
-	dup(_socket);
+	dup2(_socket, STDIN_FILENO);
+	dup2(_socket, STDOUT_FILENO);
+	dup2(_socket, STDERR_FILENO);
 
 	//RUUNNNN!
 	execl("/usr/bin/whoami", "/usr/bin/whoami", NULL);
@@ -101,7 +100,7 @@ void handle_connection(int _socket, struct sockaddr_in _addr)
 	PRINT_ERROR("EXEC failed");
 
 	close(_socket);
-	exit(0);
+	exit(1);
 }
 
 
@@ -131,6 +130,7 @@ int main(int argc, char* argv[])
 			fprintf(pidfile, "%i", pid);
 			printf("Forked with PID %i\n", pid);
 			fclose (pidfile);
+			exit(0);
 		}
 
 		fclose (pidfile);
@@ -146,26 +146,25 @@ int main(int argc, char* argv[])
 
 void dialup_server(struct prog_params params)
 {
+	printf("Starting dialup server\n");
 
 	int fd = open (params.serial_port, O_RDWR | O_NOCTTY | O_SYNC);
 	if (fd < 0)
 	{
-	        printf ("error %d opening %s: %s\n", errno, params.serial_port, strerror (errno));
+		PRINT_ERROR("Failed to open serial port");
 	        return;
 	}
 	
-	///TODO Hardcoded Baudrate. change!
-	set_interface_attribs (fd, params.serial_baudrate, 0);  // set speed to 115,200 bps, 8n1 (no parity)
-	set_blocking (fd, 0);                // set no blocking
+	set_interface_attribs (fd, params.serial_baudrate, 0);
+	set_blocking (fd, 0);
 
 	int ret = modem_accept_wait(fd);
-	printf("maw(): %i\n", ret);
 
 	if(ret)
 		return;
 
-	printf("Connection!\n");
-
+	DEBUG_PRINTF("Connection established\n");
+	
 	modem_run(fd, params.run_argc, params.run_argv);
 }
 
