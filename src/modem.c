@@ -27,6 +27,7 @@ int modem_accept_wait(int fd)
 /* //DONT wait for ring
 	while ( 1 ) { //wait for RING
 		ret = poll(&fds, 1, 2000); //poll in 2s interval
+		usleep(5000);
 		if(ret) {
 			cnt = read ( fd, buff, 128 );
 			if(strstr(buff, "RING"))
@@ -42,6 +43,7 @@ int modem_accept_wait(int fd)
 	while(1)
 	{
 		ret = poll(&fds, 1, 60000); //Connection timeout 1 minute
+		usleep(5000); //Wait for data
 		if(!ret)
 			break;
 
@@ -56,6 +58,8 @@ int modem_accept_wait(int fd)
 			ok = 0;
 			break;
 		}
+		else if(strstr(buff, "NO CARRIER")) //Don't timeout on error
+			break;
 	}
 
 	if(poll(&fds, 1, 1)) //empty the buffer
@@ -79,6 +83,7 @@ int modem_command(int fd, char* cmd, int timeout_ms)
 	int ok = 1;
 	while(1) {
 		ret = poll(&fds, 1, timeout_ms);
+		usleep(5000); //Wait for data to fully come in
 		if (ret)
 			cnt += read(fd, &buff[cnt - 1], 128 - cnt + 1);
 		else 
@@ -124,15 +129,17 @@ int modem_run(int fd, int argc, char* argv[])
 		dup2 (out[1], STDOUT_FILENO);
 		dup2 (out[1], STDERR_FILENO);
 
-		char *arv = malloc(sizeof(char) * (argc + 1));
-		memset(arv, 0, sizeof(char) * (argc + 1));
-		memcpy (arv, argv, argc);
+		char* arv[argc + 1];
 
-		//execv(argv[0], arv);
-		execl("/bin/bash", "/bin/bash", NULL);
+		for(int i = 0; i < argc; i++)
+			arv[i] = argv[i];
+
+		arv[argc] = NULL;
+
+		execv(argv[0], arv);
 
 		printf("EXEC ERROR %i: %s\r\n", errno, strerror(errno));
-		exit(0);
+		exit(1);
 	}
 	else if (pid < 0) {//error
 		return 2;
@@ -156,7 +163,7 @@ int modem_run(int fd, int argc, char* argv[])
 		while(1)
 		{
 			int ret = poll (fds, 2, 100);
-
+			usleep(5000); //Wait for data to fully come in, helps prevent truncation of status returns which helps with parsing
 			if ( fds[0].revents & POLLIN ) {
 				int cnt = read (out[0], buff, buffsize);
 				if(cnt) {
@@ -189,5 +196,4 @@ int modem_run(int fd, int argc, char* argv[])
 		close(fd); //Auto closes connection
 		return 0;
 	}
-
 }

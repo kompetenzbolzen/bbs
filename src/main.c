@@ -56,6 +56,7 @@ struct prog_params parse_args(int argc, char* argv[])
 			//Copy the rest as arguments for prog to exec
 			ret.run_argc = argc - i_cpy;
 			ret.run_argv = &(argv[i_cpy]);
+			break;
 		}//else
 	}//for
 
@@ -135,6 +136,8 @@ int main(int argc, char* argv[])
 
 		fclose (pidfile);
 	}//if params.fork
+
+	DEBUG_PRINTF("%s, %i\n", params.run_argv[0], params.run_argc);
 
 	if ( params.serial )
 		dialup_server(params);
