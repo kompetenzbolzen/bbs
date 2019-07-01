@@ -20,9 +20,11 @@
 #define _AT_MUTE "ATM0\r\n"
 #define _AT_RESET_ON_DTR "AT&D3\r\n"
 
+#define _MODEM_WAIT_RING
+
 int modem_accept_wait(int fd);
 /*
- * Waits for RING, accepts incoming calls. Return is non-zero when cennection fails.
+ * Waits for RING (ifdef _MODEM_WAIT_RING), accepts incoming calls. Return is non-zero when cennection fails.
  * */
 
 int modem_command(int fd, char* cmd, int timeout_ms);
