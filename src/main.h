@@ -54,7 +54,7 @@ struct prog_params
 
 struct prog_params parse_args(int argc, char* argv[]);
 
-void handle_connection(int _socket, struct sockaddr_in _addr);
+void handle_connection(int _socket, struct sockaddr_in _addr, int argc, char* argv[]);
 
 int main(int argc, char* argv[]);
 

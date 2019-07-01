@@ -66,7 +66,7 @@ struct prog_params parse_args(int argc, char* argv[])
 	return ret;
 }
 
-void handle_connection(int _socket, struct sockaddr_in _addr)
+void handle_connection(int _socket, struct sockaddr_in _addr, int argc, char* argv[])
 {
 	pid_t pid = fork();
 	if( pid > 0 )
@@ -95,8 +95,14 @@ void handle_connection(int _socket, struct sockaddr_in _addr)
 	dup2(_socket, STDOUT_FILENO);
 	dup2(_socket, STDERR_FILENO);
 
-	//RUUNNNN!
-	execl("/usr/bin/whoami", "/usr/bin/whoami", NULL);
+	char* arv[argc + 1];
+
+	for(int i = 0; i < argc; i++)
+		arv[i] = argv[i];
+
+	arv[argc] = NULL;
+
+	execv(argv[0], arv);
 
 	PRINT_ERROR("EXEC failed");
 
@@ -206,6 +212,6 @@ void telnet_server(struct prog_params params)
 	{
 		client_socket = accept(server_socket, &client_address, &claddrsize);
 		DEBUG_PRINTF("Connection: %s\n", inet_ntoa(client_address.sin_addr));
-		handle_connection(client_socket, client_address);
+		handle_connection(client_socket, client_address, params.run_argc, params.run_argv);
 	}
 }
