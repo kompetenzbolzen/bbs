@@ -24,17 +24,19 @@ int modem_accept_wait(int fd)
 	modem_command(fd, _AT_MUTE, 1000);
 	modem_command(fd, _AT_RESET_ON_DTR, 1000);
 
-/* //DONT wait for ring
+#ifdef _MODEM_WAIT_RING //DONT wait for ring
 	while ( 1 ) { //wait for RING
 		ret = poll(&fds, 1, 2000); //poll in 2s interval
 		usleep(5000);
 		if(ret) {
 			cnt = read ( fd, buff, 128 );
 			if(strstr(buff, "RING"))
-					break;
+				break;
 		}
 	}
-*/
+#else
+#warning "Wait for RING disabled"
+#endif
 	printf("Modem RINGING\n");
 	int ok = 5;
 	int timeout = 60000;
