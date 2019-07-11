@@ -76,42 +76,92 @@ struct prog_params parse_args(int argc, char* argv[])
 void handle_connection(int _socket, struct sockaddr_in _addr, int argc, char* argv[])
 {
 	pid_t pid = fork();
-	if( pid > 0 )
-	{
+	if( pid != 0 ) {
 		close(_socket);
 		return;
 	}
-	else if ( pid < 0 )
-		return;
 
-	//This is here for later
-	//This should handle a premature closed socket from client to not create unused processes
-	pid = fork();
-	if(pid > 0)
-	{
-		close(_socket);
-		//Instead of waiting for pid, check if process is running AND socket is still open
-		wait(0);
-		exit(0);
-	}
-	else if(pid < 0)
-		exit(1);
+	int in[2];
+	int out[2];
+
+	//1: write, 0: read
+	if(pipe(in) == -1)
+		return;
 	
-	//Redirect STDIO to socket
-	dup2(_socket, STDIN_FILENO);
-	dup2(_socket, STDOUT_FILENO);
-	dup2(_socket, STDERR_FILENO);
+	if(pipe(out) == -1)
+		return;
+	
+	pid = fork_run(in[0], out[1], out[1], argc, argv);
+	if (pid < 0)
+		return;
 
-	char* arv[argc + 1];
+	/*pid = fork();
+	
+	if(pid == 0) {//child
+		close (in[1]);
+		close (out[0]);
 
-	for(int i = 0; i < argc; i++)
-		arv[i] = argv[i];
+		dup2 (in[0],  STDIN_FILENO);
+		dup2 (out[1], STDOUT_FILENO);
+		dup2 (out[1], STDERR_FILENO);
 
-	arv[argc] = NULL;
+		char* arv[argc + 1];
 
-	execv(argv[0], arv);
+		for(int i = 0; i < argc; i++)
+			arv[i] = argv[i];
 
-	PRINT_ERROR("EXEC failed");
+		arv[argc] = NULL;
+
+		execv(argv[0], arv);
+
+		printf("EXEC ERROR %i: %s\r\n", errno, strerror(errno));
+		exit(1);
+	}
+	else if (pid < 0) {
+		return;
+	}*/
+
+	const int buffsize = 128;
+	char buff[ buffsize ];
+
+	//close unused pipes
+	close (in[0]);
+	close (out[1]);
+
+	//setup poll to listen for input
+	struct pollfd fds[2];
+	fds[0].fd = out[0];
+	fds[0].events = POLLIN;
+	fds[1].fd = _socket;
+	fds[1].events = POLLIN;
+
+	printf("Forked with PID %i\n", pid);
+
+	while(1)
+	{
+		int ret = poll (fds, 2, 100);
+		if ( fds[0].revents & POLLIN ) {
+			const int cnt = read (out[0], buff, buffsize);
+			if(try_write(_socket, buff, cnt, 100)) {
+				printf("Consecutive write errors while writing to socket.\n");
+				break;
+			}
+		}
+		if ( fds[1].revents & POLLIN ) {
+			const int cnt = read (_socket, buff, buffsize);
+			if(try_write(in[1], buff, cnt, 100)) {
+				printf("Consecutive write errors while writing to STDIN.\n");
+				break;
+			}
+		}
+
+		//TODO check socket active check. though somewhat handled by try_write()
+
+		if(kill(pid,0)) //Check if child is still alive, if not return.
+			break;
+	}
+
+	printf("Connection closed.\n");
 
 	close(_socket);
 	exit(1);

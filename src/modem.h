@@ -11,10 +11,12 @@
 #include <signal.h>
 #include <errno.h>
 
+#include "misc.h"
+
 #define _AT "AT\r\n"
 #define _AT_ANSWER "ATA\r\n"
 #define _AT_ECHO_OFF "ATE0\r\n"
-#define _AT_ECHO_ON "ATE1\r\n\”"
+#define _AT_ECHO_ON "ATE1\r\n"
 #define _AT_HANGUP "ATH\r\n"
 #define _AT_CMD_MODE "+++\r\n"
 #define _AT_MUTE "ATM0\r\n"

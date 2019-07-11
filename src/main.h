@@ -5,6 +5,8 @@
  * License: MIT
 */
 
+#pragma once
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -17,6 +19,8 @@
 #include <string.h>
 #include <signal.h>
 #include <arpa/inet.h>
+
+#include "misc.h"
 
 #define _DEF_MAX_BACKLOG 	20
 #define _DEF_PORT 		23
