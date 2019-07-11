@@ -1,3 +1,10 @@
+/*
+ * main.h
+ * (c) 2019, Jonas Gunz, jonasgunz.de
+ * <Description>
+ * License: MIT
+*/
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>

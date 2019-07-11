@@ -1,3 +1,10 @@
+/*
+ * main.c
+ * (c) 2019, Jonas Gunz, jonasgunz.de
+ * <Description>
+ * License: MIT
+*/
+
 #include "main.h"
 #include "serial.h"
 #include "modem.h"
@@ -120,6 +127,7 @@ int main(int argc, char* argv[])
 	if(params.fork)
 	{
 		FILE* pidfile = fopen(params.pidfile, "w");
+		
 		if(!pidfile)
 		{
 			PRINT_ERROR("Unable to open pidfile for writing");
@@ -141,6 +149,11 @@ int main(int argc, char* argv[])
 		}
 
 		fclose (pidfile);
+
+		//Close STDIO
+		close (STDIN_FILENO);
+		close (STDOUT_FILENO);
+		close (STDERR_FILENO);
 	}//if params.fork
 
 	DEBUG_PRINTF("%s, %i\n", params.run_argv[0], params.run_argc);
@@ -157,24 +170,30 @@ void dialup_server(struct prog_params params)
 {
 	printf("Starting dialup server\n");
 
-	int fd = open (params.serial_port, O_RDWR | O_NOCTTY | O_SYNC);
-	if (fd < 0)
-	{
-		PRINT_ERROR("Failed to open serial port");
-	        return;
+	while(1) {
+		//Serial port is reopened for every new connection to reset modem over DTR
+		int fd = open (params.serial_port, O_RDWR | O_NOCTTY | O_SYNC);
+		if (fd < 0) {
+			PRINT_ERROR("Failed to open serial port");
+		        return;
+		}
+	
+		set_interface_attribs (fd, params.serial_baudrate, 0);
+		set_blocking (fd, 0);
+
+		int ret = modem_accept_wait(fd);
+
+		if(ret) {
+			printf("Modem error %i\n", ret);
+			close(fd);
+			break;
+		}
+
+		DEBUG_PRINTF("Connection\n");
+
+		modem_run(fd, params.run_argc, params.run_argv);
+		close (fd);
 	}
-	
-	set_interface_attribs (fd, params.serial_baudrate, 0);
-	set_blocking (fd, 0);
-
-	int ret = modem_accept_wait(fd);
-
-	if(ret)
-		return;
-
-	DEBUG_PRINTF("Connection established\n");
-	
-	modem_run(fd, params.run_argc, params.run_argv);
 }
 
 void telnet_server(struct prog_params params)
