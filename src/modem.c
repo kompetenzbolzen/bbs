@@ -9,7 +9,7 @@
 
 int modem_accept_wait(int fd)
 {
-	if(!fd)
+	if(fd < 0)
 		return 1;
 
 	int buffsize = 128;
@@ -32,7 +32,7 @@ int modem_accept_wait(int fd)
 		ret = poll(&fds, 1, 2000); //poll in 2s interval
 		usleep(5000);
 		if(ret) {
-			cnt = read ( fd, buff, 128 );
+			cnt = read ( fd, buff, buffsize );
 			if(strstr(buff, "RING"))
 				break;
 		}
@@ -40,7 +40,7 @@ int modem_accept_wait(int fd)
 #else
 #warning "Wait for RING disabled"
 #endif
-	printf("Modem RINGING\n");
+	LOGPRINTF(_LOG_NOTE, "Modem RINGING");
 	int ok = 5;
 	int timeout = 60000;
 	write (fd, _AT_ANSWER, strlen(_AT_ANSWER)); //Accept incoming call
@@ -52,12 +52,10 @@ int modem_accept_wait(int fd)
 		if(!ret)
 			break;
 
-		if(cnt >= 128)
+		if(cnt >= buffsize)
 			break;
 
-		cnt += read (fd, &buff[cnt - 1], 128 - cnt + 1);
-
-		printf("%s\n", buff);
+		cnt += read (fd, &buff[cnt - 1], buffsize - cnt + 1);
 
 		if(strstr(buff, "CONNECT")){
 			ok = 0;
@@ -68,7 +66,7 @@ int modem_accept_wait(int fd)
 	}
 
 	if(poll(&fds, 1, 1)) //empty the buffer
-			read(fd, &buff, 128);
+			read(fd, &buff, buffsize);
 
 	return ok;
 }
@@ -93,11 +91,11 @@ int modem_command(int fd, char* cmd, int timeout_ms)
 		ret = poll(&fds, 1, timeout_ms);
 		usleep(5000); //Wait for data to fully come in
 		if (ret)
-			cnt += read(fd, &buff[cnt - 1], 128 - cnt + 1);
+			cnt += read(fd, &buff[cnt - 1], buffsize - cnt + 1);
 		else 
 			break;
 
-		if(cnt >= 128)
+		if(cnt >= buffsize)
 			break;
 
 
@@ -108,9 +106,9 @@ int modem_command(int fd, char* cmd, int timeout_ms)
 	}
 
 	if(poll(&fds, 1, 1)) //Empty the buffer
-			read(fd, &buff, 128);
+			read(fd, &buff, buffsize);
 
-	printf("Command %s: %s\n", cmd, ok ? "FAIL" : "OK");
+	LOGPRINTF(_LOG_DEBUG, "Command %s: %s\n", cmd, ok ? "FAIL" : "OK");
 
 	return ok;
 }
@@ -147,7 +145,7 @@ int modem_run(int fd, int argc, char* argv[])
 	fds[1].fd = fd;
 	fds[1].events = POLLIN;
 
-	printf("Forked with PID %i\n", pid);
+	LOGPRINTF(_LOG_DEBUG, "Forked with PID %i", pid);
 
 	while(1)
 	{
@@ -162,7 +160,7 @@ int modem_run(int fd, int argc, char* argv[])
 					str[1] = '*';
 
 				if(try_write(fd, buff, cnt, 100)) {
-					printf("Consecutive write errors while writing to serial device.\n");
+					LOGPRINTF(_LOG_ERROR, "Consecutive write errors while writing to serial device.");
 					break;
 				}
 			}
@@ -178,7 +176,7 @@ int modem_run(int fd, int argc, char* argv[])
 				}
 
 				if(try_write(in[1], buff, cnt, 100)) {
-					printf("Consecutive write errors while writing to STDIN.\n");
+					LOGPRINTF(_LOG_ERROR, "Consecutive write errors while writing to STDIN.");
 					break;
 				}
 			}
@@ -191,7 +189,7 @@ int modem_run(int fd, int argc, char* argv[])
 			break;
 	}
 
-	printf("Connection closed.\n");
+	LOGPRINTF(_LOG_NOTE, "Connection closed.");
 	close(fd); //Auto closes connection
 	return 0;
 }
