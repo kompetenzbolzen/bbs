@@ -246,7 +246,7 @@ void telnet_server(struct prog_params params)
 
 	int server_socket, client_socket;
 	struct sockaddr_in socket_address, client_address;
-	size_t claddrsize = sizeof(client_address);
+	socklen_t claddrsize = sizeof(client_address);
 	
 	if ( (server_socket = socket(AF_INET, SOCK_STREAM, 0)) == -1 )
 	{
@@ -259,7 +259,7 @@ void telnet_server(struct prog_params params)
 	socket_address.sin_family = AF_INET;
 	socket_address.sin_port = htons( params.port );
 
-	if ( (bind(server_socket, &socket_address, sizeof(socket_address))) == -1 )
+	if ( (bind(server_socket, (struct sockaddr*) &socket_address, sizeof(socket_address))) == -1 )
 	{
 		printf("Error binding socket: %i: %s\n", errno, strerror(errno));
 		exit(1);
@@ -273,7 +273,7 @@ void telnet_server(struct prog_params params)
 
 	while(1)
 	{
-		client_socket = accept(server_socket, &client_address, &claddrsize);
+		client_socket = accept(server_socket, (struct sockaddr*)&client_address, &claddrsize);
 		DEBUG_PRINTF("Connection: %s\n", inet_ntoa(client_address.sin_addr));
 		handle_connection(client_socket, client_address, params.run_argc, params.run_argv);
 	}

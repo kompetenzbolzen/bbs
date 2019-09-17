@@ -129,26 +129,6 @@ int modem_run(int fd, int argc, char* argv[])
 	
 	pid_t pid = fork_run(in[0], out[1], out[1], argc, argv);//fork();
 	
-/*	if(pid == 0) {//child
-		close (in[1]);
-		close (out[0]);
-
-		dup2 (in[0],  STDIN_FILENO);
-		dup2 (out[1], STDOUT_FILENO);
-		dup2 (out[1], STDERR_FILENO);
-
-		char* arv[argc + 1];
-
-		for(int i = 0; i < argc; i++)
-			arv[i] = argv[i];
-
-		arv[argc] = NULL;
-
-		execv(argv[0], arv);
-
-		printf("EXEC ERROR %i: %s\r\n", errno, strerror(errno));
-		exit(1);
-	}*/
 	if (pid < 0) {//error
 		return 2;
 	}
@@ -203,6 +183,9 @@ int modem_run(int fd, int argc, char* argv[])
 				}
 			}
 		}
+
+		if(ret < 0)
+			break;
 
 		if(kill(pid,0)) //Check if child is still alive, if not return.
 			break;
