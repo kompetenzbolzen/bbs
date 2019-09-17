@@ -218,7 +218,7 @@ void dialup_server(struct prog_params params)
 		//Serial port is reopened for every new connection to reset modem over DTR
 		int fd = open (params.serial_port, O_RDWR | O_NOCTTY | O_SYNC);
 		if (fd < 0) {
-			PRINT_ERROR("Failed to open serial port");
+			LOGPRINTF(_LOG_ERROR, "Failed to open serial port");
 		        return;
 		}
 	
@@ -228,12 +228,12 @@ void dialup_server(struct prog_params params)
 		int ret = modem_accept_wait(fd);
 
 		if(ret) {
-			printf("Modem error %i\n", ret);
+			LOGPRINTF(_LOG_NOTE, "Connection not established: %i", ret);
 			close(fd);
 			break;
 		}
 
-		DEBUG_PRINTF("Connection\n");
+		LOGPRINTF(_LOG_NOTE,"Connection");
 
 		modem_run(fd, params.run_argc, params.run_argv);
 		close (fd);

@@ -12,6 +12,7 @@
 #include <errno.h>
 
 #include "misc.h"
+#include "log.h"
 
 #define _AT "AT\r\n"
 #define _AT_ANSWER "ATA\r\n"
