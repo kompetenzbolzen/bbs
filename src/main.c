@@ -6,8 +6,6 @@
 */
 
 #include "main.h"
-#include "serial.h"
-#include "modem.h"
 
 struct prog_params parse_args(int argc, char* argv[])
 {
@@ -95,34 +93,9 @@ void handle_connection(int _socket, struct sockaddr_in _addr, int argc, char* ar
 	if (pid < 0)
 		return;
 
-	/*pid = fork();
-	
-	if(pid == 0) {//child
-		close (in[1]);
-		close (out[0]);
-
-		dup2 (in[0],  STDIN_FILENO);
-		dup2 (out[1], STDOUT_FILENO);
-		dup2 (out[1], STDERR_FILENO);
-
-		char* arv[argc + 1];
-
-		for(int i = 0; i < argc; i++)
-			arv[i] = argv[i];
-
-		arv[argc] = NULL;
-
-		execv(argv[0], arv);
-
-		printf("EXEC ERROR %i: %s\r\n", errno, strerror(errno));
-		exit(1);
-	}
-	else if (pid < 0) {
-		return;
-	}*/
-
 	const int buffsize = 128;
-	char buff[ buffsize ];
+	char buff[ buffsize + 1];
+	buff[buffsize] = '\0';
 
 	//close unused pipes
 	close (in[0]);
@@ -135,7 +108,7 @@ void handle_connection(int _socket, struct sockaddr_in _addr, int argc, char* ar
 	fds[1].fd = _socket;
 	fds[1].events = POLLIN;
 
-	printf("Forked with PID %i\n", pid);
+	LOGPRINTF(_LOG_NOTE, "%i: Connected to %s", pid, inet_ntoa(_addr.sin_addr));
 
 	while(1)
 	{
@@ -143,25 +116,39 @@ void handle_connection(int _socket, struct sockaddr_in _addr, int argc, char* ar
 		if ( fds[0].revents & POLLIN ) {
 			const int cnt = read (out[0], buff, buffsize);
 			if(try_write(_socket, buff, cnt, 100)) {
-				printf("Consecutive write errors while writing to socket.\n");
+				LOGPRINTF(_LOG_ERROR, "%i: Consecutive write errors while writing to socket.", pid);
 				break;
 			}
 		}
 		if ( fds[1].revents & POLLIN ) {
 			const int cnt = read (_socket, buff, buffsize);
+			
+			if(cnt == 0)
+				break;
+
+			char *needle = strstr(buff, "\r");
+			if (needle) //Replace CR with space
+				*needle = ' ';
+
 			if(try_write(in[1], buff, cnt, 100)) {
-				printf("Consecutive write errors while writing to STDIN.\n");
+				LOGPRINTF(_LOG_ERROR, "%i: Consecutive write errors while writing to STDIN.", pid);
 				break;
 			}
+
 		}
 
-		//TODO check socket active check. though somewhat handled by try_write()
+		if (ret < 0){
+			LOGPRINTF(_LOG_ERROR, "Poll error\n");
+			break;
+		}
 
 		if(kill(pid,0)) //Check if child is still alive, if not return.
 			break;
 	}
 
-	printf("Connection closed.\n");
+	LOGPRINTF(_LOG_NOTE, "%i: Connection closed.", pid);
+
+	kill(pid,SIGKILL);
 
 	close(_socket);
 	exit(1);
@@ -170,6 +157,13 @@ void handle_connection(int _socket, struct sockaddr_in _addr, int argc, char* ar
 
 int main(int argc, char* argv[])
 {
+	log_init_stdout(_LOG_DEBUG);
+	
+	LOGPRINTF(_LOG_DEBUG, "debug");
+	LOGPRINTF(_LOG_NOTE, "note");
+	LOGPRINTF(_LOG_WARNING, "warn");
+	LOGPRINTF(_LOG_ERROR, "Error");
+
 	signal(SIGCHLD,SIG_IGN); //Ignore sigchld
 	struct prog_params params = parse_args(argc, argv);
 

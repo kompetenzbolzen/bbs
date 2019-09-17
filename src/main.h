@@ -21,6 +21,10 @@
 #include <arpa/inet.h>
 
 #include "misc.h"
+#include "log.h"
+#include "serial.h"
+#include "modem.h"
+
 
 #define _DEF_MAX_BACKLOG 	20
 #define _DEF_PORT 		23

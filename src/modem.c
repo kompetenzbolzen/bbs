@@ -12,7 +12,10 @@ int modem_accept_wait(int fd)
 	if(!fd)
 		return 1;
 
-	char buff[128];
+	int buffsize = 128;
+	char buff[ buffsize + 1];
+	buff[buffsize] = '\0';
+	
 	int ret;		//for retturn values
 	struct pollfd fds;	//poll struct
 	int cnt = 0;		//read byte counter
@@ -72,7 +75,10 @@ int modem_accept_wait(int fd)
 
 int modem_command(int fd, char* cmd, int timeout_ms)
 {
-	char buff[128];
+	int buffsize = 128;
+	char buff[ buffsize + 1];
+	buff[buffsize] = '\0';
+	
 	int ret;		//for retturn values
 	struct pollfd fds;	//poll struct
 	int cnt = 0;		//read byte counter
@@ -148,7 +154,8 @@ int modem_run(int fd, int argc, char* argv[])
 	}
 
 	int buffsize = 128;
-	char buff[ buffsize ];
+	char buff[ buffsize + 1];
+	buff[buffsize] = '\0';
 
 	close (in[0]);
 	close (out[1]);
