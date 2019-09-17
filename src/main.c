@@ -129,7 +129,8 @@ void handle_connection(int _socket, struct sockaddr_in _addr, int argc, char* ar
 			char *needle = strstr(buff, "\r");
 			if (needle){ //Replace CR with space
 				needle[0] = '\n';
-				(needle - buff + 1) < buffsize ? needle[1]='\0':;
+				if ((needle - buff + 1) < buffsize)
+					needle[1]='\0':;
 			}
 
 			if(try_write(in[1], buff, cnt, 100)) {
