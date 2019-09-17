@@ -127,8 +127,10 @@ void handle_connection(int _socket, struct sockaddr_in _addr, int argc, char* ar
 				break;
 
 			char *needle = strstr(buff, "\r");
-			if (needle) //Replace CR with space
-				*needle = ' ';
+			if (needle){ //Replace CR with space
+				needle[0] = '\n';
+				(needle - buff + 1) < buffsize ? needle[1]='\0':;
+			}
 
 			if(try_write(in[1], buff, cnt, 100)) {
 				LOGPRINTF(_LOG_ERROR, "%i: Consecutive write errors while writing to STDIN.", pid);
