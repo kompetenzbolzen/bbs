@@ -47,8 +47,10 @@ int try_write(int _fd, char *_buff, int _size, int _retry)
 		
 		if(ret < 0)
 			return 1;
-		else
+		else {
 			written += ret; 
+			cntr = 0; //reset fail counter
+		}
 
 		if(++cntr > _retry)
 			return 1;
