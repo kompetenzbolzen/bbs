@@ -13,6 +13,7 @@
 
 #include "misc.h"
 #include "log.h"
+#include "serial.h"
 
 #define _AT "AT\r\n"
 #define _AT_ANSWER "ATA\r\n"
@@ -40,3 +41,5 @@ int modem_run(int fd, int argc, char* argv[]);
  * Run a program with modem as STDIO. checks if connection is still alive & process is still active.
  * will close fd on successful return
  * */
+
+void dialup_server(struct prog_params params);
