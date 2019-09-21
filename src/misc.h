@@ -50,6 +50,9 @@ struct prog_params
 	char*		pidfile;
 };
 
+/*
+ * Parses input parameters, returns filled program parameter struct
+ * */
 struct prog_params parse_args(int argc, char* argv[]);
 
 /*

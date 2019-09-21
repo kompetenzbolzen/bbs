@@ -10,11 +10,6 @@
 int main(int argc, char* argv[])
 {
 	log_init_stdout(_LOG_DEBUG);
-	
-	LOGPRINTF(_LOG_DEBUG, "debug");
-	LOGPRINTF(_LOG_NOTE, "note");
-	LOGPRINTF(_LOG_WARNING, "warn");
-	LOGPRINTF(_LOG_ERROR, "Error");
 
 	signal(SIGCHLD,SIG_IGN); //Ignore sigchld
 	struct prog_params params = parse_args(argc, argv);
@@ -23,23 +18,23 @@ int main(int argc, char* argv[])
 	if(params.fork)
 	{
 		FILE* pidfile = fopen(params.pidfile, "w");
-		
+
 		if(!pidfile)
 		{
-			PRINT_ERROR("Unable to open pidfile for writing");
+			LOGPRINTF(_LOG_ERROR,"Unable to open pidfile\n");
 			exit(1);
 		}
 		pid_t pid = fork();
 
 		if(pid < 0)
 		{
-			PRINT_ERROR("fork() failed");
+			LOGPRINTF(_LOG_ERROR,"fork failed\n");
 			exit(1);
 		}
 		else if(pid > 0)
 		{
 			fprintf(pidfile, "%i", pid);
-			printf("Forked with PID %i\n", pid);
+			LOGPRINTF(_LOG_INFO,"Forked with PID %i\n\n", pid);
 			fclose (pidfile);
 			exit(0);
 		}
@@ -52,7 +47,7 @@ int main(int argc, char* argv[])
 		close (STDERR_FILENO);
 	}//if params.fork
 
-	DEBUG_PRINTF("%s, %i\n", params.run_argv[0], params.run_argc);
+	LOGPRINTF(_LOG_DEBUG, "%s, %i\n", params.run_argv[0], params.run_argc);
 
 	if ( params.serial )
 		dialup_server(params);

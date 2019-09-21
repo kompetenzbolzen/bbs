@@ -26,20 +26,23 @@
 
 #define _MODEM_WAIT_RING
 
-int modem_accept_wait(int fd);
 /*
  * Waits for RING (ifdef _MODEM_WAIT_RING), accepts incoming calls. Return is non-zero when cennection fails.
  * */
+int modem_accept_wait(int fd);
 
-int modem_command(int fd, char* cmd, int timeout_ms);
 /*
  * Execute an AT command. return is non-zero if answer is not OK
  * */
+int modem_command(int fd, char* cmd, int timeout_ms);
 
-int modem_run(int fd, int argc, char* argv[]);
 /*
  * Run a program with modem as STDIO. checks if connection is still alive & process is still active.
  * will close fd on successful return
  * */
+int modem_run(int fd, int argc, char* argv[]);
 
+/*
+ * Spawn a telnet server
+ * */
 void dialup_server(struct prog_params params);

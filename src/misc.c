@@ -25,7 +25,7 @@ pid_t fork_run(int _stdin, int _stdout, int _stderr, int argc, char* argv[])
 
 		execv(argv[0], arv);
 
-		printf("EXEC ERROR %i: %s\r\n", errno, strerror(errno));
+		LOGPRINTF(_LOG_ERROR, "fork_run(): exec failed\n");
 		exit(1);
 	}
 	else {

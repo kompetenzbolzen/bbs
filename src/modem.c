@@ -86,7 +86,7 @@ int modem_command(int fd, char* cmd, int timeout_ms)
 
 	write(fd, cmd, strlen(cmd) );
 
-	int ok = 1;
+	int ok = 1; //Return value of function
 	while(1) {
 		ret = poll(&fds, 1, timeout_ms);
 		usleep(5000); //Wait for data to fully come in
@@ -97,7 +97,6 @@ int modem_command(int fd, char* cmd, int timeout_ms)
 
 		if(cnt >= buffsize)
 			break;
-
 
 		if( strstr(buff, "OK") ) {
 			ok = 0;
