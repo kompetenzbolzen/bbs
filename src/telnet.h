@@ -14,6 +14,9 @@
 #include "misc.h"
 #include "log.h"
 
+/**
+ * Spawn telnet server
+ */
 void telnet_server(struct prog_params params);
 
 void handle_connection(int _socket, struct sockaddr_in _addr, int argc, char* argv[]);

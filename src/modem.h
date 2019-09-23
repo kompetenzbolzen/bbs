@@ -24,6 +24,7 @@
 #define _AT_MUTE "ATM0\r\n"
 #define _AT_RESET_ON_DTR "AT&D3\r\n"
 
+//Uncomment to ignore wait for modem ring
 #define _MODEM_WAIT_RING
 
 /*

@@ -14,6 +14,7 @@
 #define _LOG_DEBUG 	4
 
 unsigned int log_loglevel;
+int log_fd;
 
 const char* log_loglevel_str[5];
 
@@ -35,14 +36,14 @@ const char* log_loglevel_str[5];
 }
 
 
-int log_init_file(char* _file, unsigned int _verbosity);
 /**
  * Opens logfile, writes filedes to _fd
  * */
+int log_init_file(char* _file, unsigned int _verbosity);
 
-int log_init_stdout(unsigned int _verbosity);
 /**
  * Configures LOG macros for stdout
  */
+int log_init_stdout(unsigned int _verbosity);
 
-
+int log_close();

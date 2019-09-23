@@ -14,8 +14,10 @@
 #include <string.h>
 #include <stdint.h>
 
+#include "log.h"
+
 #ifdef _DEBUG
-//DEBUG Macros
+//DEBUG Macros  --DEPRECATED--
 #warning "Compiling in DEBUG mode"
 #define DEBUG_PRINTF( ... ) { \
 	printf("%s:%d: ", __FILE__, __LINE__); \ 
