@@ -1,5 +1,9 @@
 #include "log.h"
 
+unsigned int log_loglevel;
+
+const char* log_loglevel_str[5];
+
 const char* log_loglevel_str[5] = {
 	"---",
 	"ERROR",
