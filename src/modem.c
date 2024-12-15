@@ -86,7 +86,7 @@ int modem_command(int fd, char* cmd, int timeout_ms)
 
 	write(fd, cmd, strlen(cmd) );
 
-	int ok = 1;
+	int ok = 1; //Return value of function
 	while(1) {
 		ret = poll(&fds, 1, timeout_ms);
 		usleep(5000); //Wait for data to fully come in
@@ -97,7 +97,6 @@ int modem_command(int fd, char* cmd, int timeout_ms)
 
 		if(cnt >= buffsize)
 			break;
-
 
 		if( strstr(buff, "OK") ) {
 			ok = 0;
@@ -192,4 +191,34 @@ int modem_run(int fd, int argc, char* argv[])
 	LOGPRINTF(_LOG_NOTE, "Connection closed.");
 	close(fd); //Auto closes connection
 	return 0;
+}
+
+void dialup_server(struct prog_params params)
+{
+	printf("Starting dialup server\n");
+
+	while(1) {
+		//Serial port is reopened for every new connection to reset modem over DTR
+		int fd = open (params.serial_port, O_RDWR | O_NOCTTY | O_SYNC);
+		if (fd < 0) {
+			LOGPRINTF(_LOG_ERROR, "Failed to open serial port");
+		        return;
+		}
+	
+		set_interface_attribs (fd, params.serial_baudrate, 0);
+		set_blocking (fd, 0);
+
+		int ret = modem_accept_wait(fd);
+
+		if(ret) {
+			LOGPRINTF(_LOG_NOTE, "Connection not established: %i", ret);
+			close(fd);
+			break;
+		}
+
+		LOGPRINTF(_LOG_NOTE,"Connection");
+
+		modem_run(fd, params.run_argc, params.run_argv);
+		close (fd);
+	}
 }

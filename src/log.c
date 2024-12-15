@@ -1,7 +1,7 @@
 #include "log.h"
 
 unsigned int log_loglevel;
-
+int log_fd;
 const char* log_loglevel_str[5];
 
 const char* log_loglevel_str[5] = {
@@ -14,22 +14,23 @@ const char* log_loglevel_str[5] = {
 
 int log_init_file(char* _file, unsigned int _verbosity)
 {
-	int fd = open(_file, O_WRONLY | O_APPEND | O_CREAT | O_DSYNC);
+	log_fd = open(_file, O_WRONLY | O_APPEND | O_CREAT | O_DSYNC);
 
-	if(fd < 0) {
-		LOGPRINTF(_LOG_ERROR, "Failed to open LogFile %s", _file);
-	} else {
-		dup2(fd, STDOUT_FILENO);
-		dup2(fd, STDERR_FILENO);
-	}
 	return log_init_stdout(_verbosity);;
 }
 
 int log_init_stdout(unsigned int _verbosity)
 {
 	log_loglevel = _verbosity;// > _LOG_DEBUG ? _LOG_DEBUG : _verbosity;
+	log_fd = STDIN_FILENO;
+	
 	LOGPRINTF(0, "=== RESTART ===");
 	LOGPRINTF(0, "Verbosity: %i", _verbosity);
+
 	return 0;
 }
 
+int log_close()
+{
+	return close(log_fd);
+}
